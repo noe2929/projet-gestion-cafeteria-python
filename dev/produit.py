@@ -14,7 +14,7 @@ class Produit:
         self.code = code            # ex. "B01"
         self.nom = nom              # ex. "Café expresso"
         self.categorie = categorie  # "boisson chaude", "plat", "dessert"...
-        self.prix = prix            # prix en euros
+        self.prix = prix            # prix en €
         self.stock = stock          # nombre produits en stock
 
     def disponible(self, quantite, heure):
