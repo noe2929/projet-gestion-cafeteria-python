@@ -17,9 +17,14 @@ j'avais un doute sur l'architecture de mon projet.
 en relisant mon code, je me suis rendu compte qu'il serait plus lisible d'avoir une classe dans un fichier que d'avoir un fichier unique qui regroupe le contenu de chaque classe. Chaque classe est désormais dans son propre fichier.
 
 
-# 10/11
+## 10/11
 - Ce qui a bloqué : 
 Je me suis demandé si on pouvait se passer de `round` dans les calculs de montant.
 
 - Comment je m'en suis sorti : 
 j'ai fait un test dans Python. Il montre que 1.60 + 3 * 1.20 donne 5.199999999999999 au lieu de 5.20, et qu'un solde de 0.30 est refusé pour un paiement de 0.1 + 0.2 (0.1 + 0.2 = 0.30000000000000004). Python fait de très petites erreurs sur les nombres décimaux. J'ai donc gardé `round(x, 2)`, qui arrondit au centime, après chaque calcul d'argent.
+
+## 12/11
+- Ce qui a bloqué : je ne savais pas comment donner automatiquement un numéro différent à chaque commande. En écrivant `self.compteur += 1`, je me suis demandé si chaque commande n'allait pas avoir son propre compteur.
+
+- Comment je m'en suis sorti : j'ai relu la section 5.2 du sujet, qui dit que « le numéro de commande vient d'un compteur de classe ». Un attribut de classe est partagé par toutes les commandes. Je l'écris donc avec `Commande.compteur += 1` et non `self.compteur += 1`. Chaque nouvelle commande reçoit ainsi le numéro suivant.
