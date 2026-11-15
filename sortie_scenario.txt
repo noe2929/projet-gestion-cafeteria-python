@@ -1,0 +1,96 @@
+[1] 07:30 - Ouverture de la cafétéria
+[2] 07:45 - Commande de Alice : ACCEPTÉE, 2.40 € payés
+--- Commande n°1 (07:45) - Alice ---
+1 x Café expresso : 1.20 €
+1 x Croissant : 1.20 €
+Total : 2.40 €
+Montant payé : 2.40 €
+      Après : Alice (etudiant) : solde 9.60 € ; cumul d'achats : 2.40 €
+[3] 08:10 - Commande de Farid : ACCEPTÉE, 2.40 € payés
+--- Commande n°2 (08:10) - Farid ---
+2 x Café expresso : 2.40 €
+Total : 2.40 €
+Montant payé : 2.40 €
+      Après : Farid (personnel) : solde -2.40 € ; cumul d'achats : 2.40 €
+[4] 08:30 - Commande de Bruno : REFUSÉE (solde insuffisant)
+      Après : Bruno (alternant) : solde 3.50 € ; cumul d'achats : 0.00 €
+[5] 08:35 - Recharge de Bruno (+20.00 €) : ACCEPTÉE
+      Après : Bruno (alternant) : solde 23.50 € ; cumul d'achats : 0.00 €
+[6] 08:40 - Commande de Bruno : ACCEPTÉE, 5.20 € payés
+--- Commande n°3 (08:40) - Bruno ---
+1 x Chocolat chaud : 1.60 €
+3 x Croissant : 3.60 €
+Total : 5.20 €
+Montant payé : 5.20 €
+      Après : Bruno (alternant) : solde 18.30 € ; cumul d'achats : 5.20 €
+[7] 09:15 - Commande de Visiteur : ACCEPTÉE, 2.70 € payés
+--- Commande n°4 (09:15) - Visiteur ---
+1 x Thé : 1.30 €
+1 x Cookie : 1.40 €
+Total : 2.70 €
+Montant payé : 2.70 €
+      Après : Visiteur (visiteur) : solde 0.00 € ; cumul d'achats : 0.00 €
+[8] 11:00 - Commande de Chloé : REFUSÉE (hors créneau)
+      Après : Chloé (etudiant) : solde 25.00 € ; cumul d'achats : 0.00 €
+[9] 12:05 - Commande de Chloé : ACCEPTÉE, 9.54 € payés
+--- Commande n°5 (12:05) - Chloé ---
+1 x Plat du jour : 7.20 €
+1 x Jus d'orange : 2.00 €
+1 x Cookie : 1.40 €
+Total : 10.60 €
+Montant payé : 9.54 €
+      Après : Chloé (etudiant) : solde 15.46 € ; cumul d'achats : 9.54 €
+[10] 12:10 - Recharge de Alice (+150.00 €) : REFUSÉE (montant de recharge invalide)
+      Après : Alice (etudiant) : solde 9.60 € ; cumul d'achats : 2.40 €
+[11] 12:20 - Commande de Alice : ACCEPTÉE, 7.60 € payés
+--- Commande n°6 (12:20) - Alice ---
+1 x Wrap végétarien : 4.60 €
+1 x Eau 50 cl : 1.00 €
+1 x Fruit de saison : 0.80 €
+1 x Café expresso : 1.20 €
+Total : 7.60 €
+Montant payé : 7.60 €
+      Après : Alice (etudiant) : solde 2.00 € ; cumul d'achats : 10.00 €
+[12] 12:45 - Commande de Visiteur : REFUSÉE (rupture de stock)
+      Après : Visiteur (visiteur) : solde 0.00 € ; cumul d'achats : 0.00 €
+[13] 13:00 - Commande de Bruno : REFUSÉE (produit inconnu)
+      Après : Bruno (alternant) : solde 18.30 € ; cumul d'achats : 5.20 €
+[14] 15:30 - Commande de Alice : REFUSÉE (solde insuffisant)
+      Après : Alice (etudiant) : solde 2.00 € ; cumul d'achats : 10.00 €
+[15] 16:00 - Réapprovisionnement de P01 (+10) : FAIT
+[16] 17:30 - Commande de Farid : ACCEPTÉE, 2.60 € payés
+--- Commande n°7 (17:30) - Farid ---
+2 x Thé : 2.60 €
+Total : 2.60 €
+Montant payé : 2.60 €
+      Après : Farid (personnel) : solde -5.00 € ; cumul d'achats : 5.00 €
+[17] 18:30 - Clôture
+===== RAPPORT DE CLÔTURE =====
+Commandes acceptées : 7
+Refus par motif :
+  produit inconnu : 1
+  quantité invalide : 0
+  rupture de stock : 1
+  hors créneau : 1
+  solde insuffisant : 2
+Chiffre d'affaires : 32.44 €
+Total des remises et avantages : 1.06 €
+Les 3 produits les plus vendus :
+  Café expresso (B01) : 4 vendus
+  Croissant (V01) : 4 vendus
+  Thé (B02) : 3 vendus
+Carte triée par prix croissant :
+  Fruit de saison (D02) : 0.80 € - stock : 29
+  Eau 50 cl (B05) : 1.00 € - stock : 39
+  Café expresso (B01) : 1.20 € - stock : 96
+  Croissant (V01) : 1.20 € - stock : 26
+  Thé (B02) : 1.30 € - stock : 57
+  Cookie (D01) : 1.40 € - stock : 23
+  Chocolat chaud (B03) : 1.60 € - stock : 39
+  Jus d'orange (B04) : 2.00 € - stock : 23
+  Sandwich jambon-beurre (P01) : 4.00 € - stock : 25
+  Wrap végétarien (P02) : 4.60 € - stock : 9
+  Plat du jour (P03) : 7.20 € - stock : 19
+Badges dont le solde est inférieur à 3.00 € :
+  Alice (etudiant) : solde 2.00 €
+  Farid (personnel) : solde -5.00 €
