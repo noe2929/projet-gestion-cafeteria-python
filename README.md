@@ -3,10 +3,6 @@
 Projet de fin de module Python — Master 1 Data/IA 2026-2027  
 Étudiant : Noé LABBÉ
 
-## Dépôt Git
-
-[Voir le dépôt GitHub](https://github.com/noe2929/projet-gestion-cafeteria-python.git)
-
 ## 1. Présentation
 
 CampusCafé est une application Python qui simule la gestion d'une caisse de cafétéria :

@@ -20,7 +20,7 @@ class Produit:
     def disponible(self, quantite, heure):
         """Dit si on peut servir 'quantite' unités à 'heure'.
 
-        Renvoie un couple (ok, motif) :
+        Renvoie un couple tuple(bool, str) (ok, motif) :
           (True, "")                   si le produit est disponible
           (False, "rupture de stock")  si le stock est insuffisant
           (False, "hors créneau")      si c'est un plat hors de 11:30-14:00
