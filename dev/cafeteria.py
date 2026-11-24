@@ -169,10 +169,12 @@ class Cafeteria:
         "soldes_faibles"   : list    de Client dont le solde est sous SEUIL_SOLDE_FAIBLE
         """
         rapport = {}
+        # Le rapport utilise uniquement les commandes acceptées.
         rapport["nb_acceptees"] = len(self.journal)
         rapport["refus"] = self.refus
         rapport["chiffre_affaires"] = self.calculer_chiffre_affaires()
         rapport["total_remises"] = self.calculer_total_remises()
+        # Les résultats sont calculés avant leur affichage.
         rapport["top_ventes"] = self.calculer_top_ventes()
         rapport["carte_triee"] = sorted(self.carte.values())    # sorted utilise Produit.__lt__
         rapport["soldes_faibles"] = self.trouver_soldes_faibles()
@@ -181,6 +183,7 @@ class Cafeteria:
     def calculer_chiffre_affaires(self):
         """Renvoie la somme des montants payés par toutes les commandes acceptées."""
         chiffre = 0.0
+        # Ajoute le montant payé de chaque commande acceptée.
         for commande in self.journal:
             chiffre += commande.montant_paye
         return round(chiffre, 2)
@@ -189,14 +192,17 @@ class Cafeteria:
         """Renvoie la somme des remises et avantages : (total avant remises - montant payé)."""
         remises = 0.0
         for commande in self.journal:
+            # La remise est l'écart entre le total initial et le montant payé.
             remises += commande.calculer_total() - commande.montant_paye
         return round(remises, 2)
 
     def compter_ventes(self):
         """Renvoie un dict code -> quantité vendue (0 pour un produit jamais vendu)."""
         ventes = {}
+        # Initialise tous les produits, même ceux qui n'ont jamais été vendus.
         for code in self.carte:
             ventes[code] = 0
+        # Additionne les quantités présentes dans les commandes acceptées.
         for commande in self.journal:
             for produit, quantite in commande:
                 ventes[produit.code] += quantite
@@ -209,6 +215,7 @@ class Cafeteria:
         """
         meilleur_code = None
         meilleure_quantite = 0
+        # En cas d'égalité, la carte conserve son ordre initial.
         for code in ventes:
             if ventes[code] > meilleure_quantite:
                 meilleur_code = code
@@ -220,6 +227,7 @@ class Cafeteria:
         ventes = self.compter_ventes()
         top = []
         for rang in range(self.NB_PRODUITS_TOP):
+            # Sélectionne le meilleur produit puis l'exclut du prochain classement.
             code = self.trouver_meilleur_code(ventes)
             if code is not None:              # None s'il reste moins de 3 produits vendus
                 top.append((self.carte[code], ventes[code]))
@@ -229,6 +237,7 @@ class Cafeteria:
     def trouver_soldes_faibles(self):
         """Renvoie la liste des Client dont le solde est sous SEUIL_SOLDE_FAIBLE (sans les visiteurs)."""
         soldes_faibles = []
+        # Les visiteurs sont exclus puisqu'ils ne possèdent pas de badge.
         for client in self.clients.values():
             if client.profil != "visiteur" and client.solde < self.SEUIL_SOLDE_FAIBLE:
                 soldes_faibles.append(client)
@@ -238,6 +247,7 @@ class Cafeteria:
 
     def afficher_rapport(self):
         """Affiche le rapport de clôture. Elle ne calcule rien : elle affiche construire_rapport."""
+        # Cette méthode se charge uniquement de présenter les résultats.
         rapport = self.construire_rapport()
         print("===== RAPPORT DE CLÔTURE =====")
         print(f"Commandes acceptées : {rapport['nb_acceptees']}")
@@ -251,18 +261,21 @@ class Cafeteria:
     def afficher_refus(self, refus):
         """refus : dict motif -> nombre."""
         print("Refus par motif :")
+        # Afficher aussi les motifs à zéro rend le bilan complet.
         for motif in refus:
             print(f"  {motif} : {refus[motif]}")
 
     def afficher_top_ventes(self, top):
         """top : list de couples (Produit, quantité)."""
         print(f"Les {self.NB_PRODUITS_TOP} produits les plus vendus :")
+        # Chaque ligne contient le nom, le code et la quantité vendue.
         for produit, quantite in top:
             print(f"  {produit.nom} ({produit.code}) : {quantite} vendus")
 
     def afficher_carte(self, carte_triee):
         """carte_triee : list de Produit. On signale les produits épuisés."""
         print("Carte triée par prix croissant :")
+        # Le stock restant est affiché avec chaque produit.
         for produit in carte_triee:
             if produit.stock == 0:
                 print(f"  {produit} - ÉPUISÉ")
@@ -272,6 +285,7 @@ class Cafeteria:
     def afficher_soldes_faibles(self, soldes_faibles):
         """soldes_faibles : list de Client."""
         print(f"Badges dont le solde est inférieur à {self.SEUIL_SOLDE_FAIBLE:.2f} € :")
+        # Seuls les clients sous le seuil sont listés.
         for client in soldes_faibles:
             print(f"  {client}")
 
