@@ -80,13 +80,15 @@ python dev/scenario_v2.py > sortie_scenario_v2.txt
 │   ├── cas_de_tests.ipynb
 │   └── pseudo_code_traitement_commande.ipynb
 ├── dev/
-│   ├── cafeteria.py      # Gestion de la caisse et traitement des commandes
+│   ├── cafeteria.py      # Gestion de la caisse, des annulations et des rappels
 │   ├── client.py         # Gestion des clients, soldes et fidélité
-│   ├── commande.py       # Gestion des commandes
-│   ├── produit.py        # Gestion des produits et des stocks
-│   ├── scenario.py       # Scénario de la journée
-│   └── tests.py          # Tests du projet
+│   ├── commande.py       # Gestion des commandes et de leurs tickets
+│   ├── produit.py        # Gestion des produits, stocks et rappels
+│   ├── scenario.py       # Scénario v1
+│   ├── scenario_v2.py    # Scénario officiel v2
+│   └── tests.py          # Tests v1 et évolution v2
 ├── JOURNAL.md
 ├── README.md
-└── sortie_scenario.txt  # Résultat enregistré du scénario
+├── sortie_scenario.txt   # Résultat enregistré du scénario v1
+└── sortie_scenario_v2.txt # Résultat enregistré du scénario v2
 ```

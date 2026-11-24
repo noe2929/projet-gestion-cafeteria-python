@@ -229,4 +229,24 @@ assert resume_second["motif"] == "déjà rappelé"
 assert resume_second["commandes_annulees"] == []
 assert rappel_caf5.construire_rapport()["refus"]["déjà rappelé"] == 1
 
+# PHASE 3 : RUBRIQUES DU RAPPORT DE CRISE
+
+rapport_rappel = rappel_caf.construire_rapport()
+assert rapport_rappel["nb_acceptees"] == 0
+assert rapport_rappel["nb_annulees"] == 2
+assert rapport_rappel["chiffre_affaires"] == 0.0
+assert rapport_rappel["montant_rembourse"] == 3.80
+assert rapport_rappel["top_ventes"] == []
+
+rappel_client = rapport_rappel["rappels"]["B01"]
+assert rappel_client["montant_total"] == 3.80
+assert rappel_client["clients_rembourses"] == {"Alice": 1.20, "Bruno": 2.60}
+
+produit_carte = rapport_rappel["carte_triee"][0]
+for produit in rapport_rappel["carte_triee"]:
+    if produit.code == "B01":
+        produit_carte = produit
+assert produit_carte.rappele is True
+assert produit_carte.stock == 0
+
 print("Tous les tests passent.")
