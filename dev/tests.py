@@ -43,7 +43,6 @@ pile_40 = Client("B", "etudiant", 50.00)
 pile_40.ajouter_achat(40.00)
 assert pile_40.avantage_fidelite() == 0.05        # 40,00 € cumulés : -5 %
 
-
 # COMMANDE : événement 6 du sujet (Chocolat chaud + Croissant x 3)
 
 commande = Commande(bruno, "08:40")
@@ -82,5 +81,152 @@ assert caf.traiter_commande("Alice", "12:00", [("B01", 1)]) == (True, "", 1.14)
 
 # Rapport : le chiffre d'affaires est la somme des 3 commandes acceptées
 assert caf.construire_rapport()["chiffre_affaires"] == 10.74    # 2,40 + 7,20 + 1,14
+
+# PHASE 1 : ANNULATION DE COMMANDE
+
+# 1. Annuler la dernière commande remet le stock, le solde et la fidélité dans leur état avant la commande
+annulation_caf = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Test", "etudiant", 10.00)])
+solde_avant = annulation_caf.clients["Test"].solde
+stock_avant = annulation_caf.carte["B01"].stock
+cumul_avant = annulation_caf.clients["Test"].cumul_achats
+assert annulation_caf.traiter_commande("Test", "07:45", [("B01", 1)]) == (True, "", 1.20)
+commande_annulee = annulation_caf.journal[-1]
+assert annulation_caf.annuler_commande(commande_annulee.numero) == (True, "", 1.20)
+assert annulation_caf.clients["Test"].solde == solde_avant
+assert annulation_caf.carte["B01"].stock == stock_avant
+assert annulation_caf.clients["Test"].cumul_achats == cumul_avant
+
+# 2. Annulation d'une commande inconnue
+annulation_caf2 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Test", "etudiant", 10.00)])
+assert annulation_caf2.annuler_commande(999) == (False, "commande inconnue", 0.0)
+
+# 3. Annulation d'une commande déjà annulée
+annulation_caf3 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Test", "etudiant", 10.00)])
+annulation_caf3.traiter_commande("Test", "07:45", [("B01", 1)])
+numero_caf3 = annulation_caf3.journal[-1].numero
+assert annulation_caf3.annuler_commande(numero_caf3) == (True, "", 1.20)
+assert annulation_caf3.annuler_commande(numero_caf3) == (False, "commande déjà annulée", 0.0)
+
+# 4. Annulation refusée : aucune modification
+annulation_caf4 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Test", "etudiant", 10.00)])
+stock_avant_refus = annulation_caf4.carte["B01"].stock
+solde_avant_refus = annulation_caf4.clients["Test"].solde
+assert annulation_caf4.annuler_commande(999) == (False, "commande inconnue", 0.0)
+assert annulation_caf4.carte["B01"].stock == stock_avant_refus
+assert annulation_caf4.clients["Test"].solde == solde_avant_refus
+
+# 5. Remboursement d'un visiteur
+visiteur_caf = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Visiteur", "visiteur", 0.00)])
+assert visiteur_caf.traiter_commande("Visiteur", "07:45", [("B01", 1)]) == (True, "", 1.20)
+numero_visiteur = visiteur_caf.journal[-1].numero
+assert visiteur_caf.annuler_commande(numero_visiteur) == (True, "", 1.20)
+assert visiteur_caf.clients["Visiteur"].solde == 0.00
+
+# 6. Remboursement qui fait dépasser 150,00 €
+plafond_caf = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Riche", "etudiant", 145.80)])
+assert plafond_caf.traiter_commande("Riche", "07:45", [("B01", 1)]) == (True, "", 1.20)
+numero_riche = plafond_caf.journal[-1].numero
+assert plafond_caf.recharger_badge("Riche", 5.00) == (True, "")
+assert plafond_caf.annuler_commande(numero_riche) == (True, "", 1.20)
+assert plafond_caf.clients["Riche"].solde == 150.80
+
+# 7. Annulation d'une commande ayant utilisé un avantage de fidélité
+fidelite_caf = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 100),
+     Produit("P01", "Sandwich", "plat", 4.00, 20)],
+    [Client("Fidele", "etudiant", 100.00)])
+fidelite_client = fidelite_caf.clients["Fidele"]
+assert fidelite_caf.traiter_commande("Fidele", "12:00", [("P01", 12)]) == (True, "", 43.20)
+assert fidelite_client.avantage_fidelite() == 0.05
+assert fidelite_caf.traiter_commande("Fidele", "07:45", [("B01", 1)]) == (True, "", 1.14)
+fidelite_commande = fidelite_caf.journal[-1]
+assert fidelite_commande.avantage_fidelite == 0.05
+assert fidelite_caf.annuler_commande(fidelite_commande.numero) == (True, "", 1.14)
+assert fidelite_client.cumul_achats == 43.20
+assert fidelite_client.avantage_fidelite() == 0.05
+
+# 8. Ticket d'une commande annulée
+assert "ANNULÉE" in fidelite_commande.__str__()
+
+# Rapport : montant remboursé et nombre de commandes annulées
+rapport_fidelite = fidelite_caf.construire_rapport()
+assert rapport_fidelite["montant_rembourse"] == 1.14
+assert rapport_fidelite["nb_annulees"] == 1
+
+# PHASE 2 : RAPPEL DE PRODUIT
+
+# 1. Rappel d'un produit présent dans plusieurs commandes
+rappel_caf = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10),
+     Produit("D01", "Cookie", "dessert", 1.40, 10)],
+    [Client("Alice", "etudiant", 20.00),
+     Client("Bruno", "alternant", 20.00)])
+
+assert rappel_caf.traiter_commande("Alice", "07:45", [("B01", 1)]) == (True, "", 1.20)
+numero_alice_rappel = rappel_caf.journal[-1].numero
+assert rappel_caf.traiter_commande("Bruno", "08:00", [("B01", 1), ("D01", 1)]) == (True, "", 2.60)
+numero_bruno_rappel = rappel_caf.journal[-1].numero
+stock_cookie_avant = rappel_caf.carte["D01"].stock
+resume = rappel_caf.rappeler_produit("B01")
+assert resume["motif"] == ""
+assert resume["commandes_annulees"] == [numero_alice_rappel, numero_bruno_rappel]
+assert resume["montant_total"] == 3.80
+assert resume["clients_rembourses"] == {"Alice": 1.20, "Bruno": 2.60}
+assert rappel_caf.carte["B01"].stock == 0
+assert rappel_caf.carte["B01"].rappele is True
+assert rappel_caf.carte["D01"].stock == stock_cookie_avant + 1
+assert rappel_caf.clients["Alice"].solde == 20.00
+assert rappel_caf.clients["Bruno"].solde == 20.00
+
+# 2. Rappel d'un produit sans aucune commande
+rappel_vide = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Alice", "etudiant", 20.00)])
+resume_vide = rappel_vide.rappeler_produit("B01")
+assert resume_vide["commandes_annulees"] == []
+assert resume_vide["clients_rembourses"] == {}
+assert resume_vide["montant_total"] == 0.0
+assert rappel_vide.carte["B01"].stock == 0
+
+# 3. Commande contenant un produit rappelé : refusée, sans modification
+rappel_caf3 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Alice", "etudiant", 20.00)])
+rappel_caf3.rappeler_produit("B01")
+solde_avant_refus = rappel_caf3.clients["Alice"].solde
+stock_avant_refus = rappel_caf3.carte["B01"].stock
+assert rappel_caf3.traiter_commande("Alice", "07:45", [("B01", 1)]) == (False, "produit rappelé", 0.0)
+assert rappel_caf3.clients["Alice"].solde == solde_avant_refus
+assert rappel_caf3.carte["B01"].stock == stock_avant_refus
+
+# 4. Réapprovisionnement d'un produit rappelé : refusé
+rappel_caf4 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Alice", "etudiant", 20.00)])
+rappel_caf4.rappeler_produit("B01")
+assert rappel_caf4.reapprovisionner("B01", 5) is False
+assert rappel_caf4.carte["B01"].stock == 0
+
+# 5. Second rappel du même produit
+rappel_caf5 = Cafeteria(
+    [Produit("B01", "Café expresso", "boisson chaude", 1.20, 10)],
+    [Client("Alice", "etudiant", 20.00)])
+rappel_caf5.rappeler_produit("B01")
+resume_second = rappel_caf5.rappeler_produit("B01")
+assert resume_second["motif"] == "déjà rappelé"
+assert resume_second["commandes_annulees"] == []
+assert rappel_caf5.construire_rapport()["refus"]["déjà rappelé"] == 1
 
 print("Tous les tests passent.")

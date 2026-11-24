@@ -16,6 +16,7 @@ class Produit:
         self.categorie = categorie  # "boisson chaude", "plat", "dessert"...
         self.prix = prix            # prix en €
         self.stock = stock          # nombre produits en stock
+        self.rappele = False
 
     def disponible(self, quantite, heure):
         """Dit si on peut servir 'quantite' unités à 'heure'.
@@ -26,11 +27,15 @@ class Produit:
           (False, "hors créneau")      si c'est un plat hors de 11:30-14:00
         Cette méthode ne modifie rien : elle répond seulement.
         """
-        # Contrôle 1 : le stock
+        # Contrôle 1 : un produit rappelé n'est jamais vendable
+        if self.rappele:
+            return (False, "produit rappelé")
+
+        # Contrôle 2 : le stock
         if quantite > self.stock:
             return (False, "rupture de stock")
 
-        # Contrôle 2 : le créneau, seulement pour les plats. Les heures sont des chaînes "HH:MM", qui se comparent directement.
+        # Contrôle 3 : le créneau, seulement pour les plats. Les heures sont des chaînes "HH:MM", qui se comparent directement.
         if self.categorie == "plat":
             dans_le_creneau = self.HEURE_DEBUT_PLATS <= heure < self.HEURE_FIN_PLATS
             if not dans_le_creneau:
@@ -48,9 +53,19 @@ class Produit:
 
     def reapprovisionner(self, quantite):
         """Ajoute 'quantite' unités au stock. Renvoie True si l'ajout a eu lieu."""
+        if self.rappele:
+            return False
         if quantite <= 0:
             return False            # on ne modifie rien
         self.stock += quantite
+        return True
+
+    def rappeler(self):
+        """Marque le produit rappelé et remet son stock à zéro."""
+        if self.rappele:
+            return False
+        self.rappele = True
+        self.stock = 0
         return True
 
     def __eq__(self, autre):

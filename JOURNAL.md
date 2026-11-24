@@ -71,3 +71,22 @@ j'ai fait un test dans Python. Il montre que 1.60 + 3 * 1.20 donne 5.19999999999
 
 - Il n'y a donc pas d'écart entre les calculs manuels et le programme. Dans ces trois
   événements, aucun client n'a encore atteint le seuil de fidélité de 40,00 €.
+
+
+## Évolution v2.0
+
+- Implémentation des annulations : les commandes ont un statut, restent dans le journal
+  et conservent le montant payé, la remise et l'avantage de fidélité.
+- Implémentation du rappel : le produit P02 est marqué rappelé, son stock passe à 0 et
+  les commandes actives qui le contiennent sont annulées dans l'ordre du journal.
+- Le rejeu de fidélité est placé dans `Cafeteria.recalculer_fidelite(client)`.
+- Les tests vérifient les doubles annulations, les remboursements visiteurs, le dépassement
+  du solde de 150 €, les commandes rappelées, les réapprovisionnements refusés et les
+  rappels multiples.
+- Calcul officiel vérifié à 12:18 : Chloé paie 4,60 €, son solde passe de 15,46 € à
+  10,86 € et son cumul passe de 9,54 € à 14,14 €.
+- À 12:25 : l'annulation rembourse 4,60 €, Chloé retrouve 15,46 € et son cumul revient à
+  9,54 €.
+- À 12:30 : le rappel rembourse 8,28 € à Bruno et 7,60 € à Alice, soit 15,88 € au total.
+- Les résultats ont été comparés à `dev/scenario_v2.py` et enregistrés dans
+  `sortie_scenario_v2.txt`.

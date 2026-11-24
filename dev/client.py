@@ -16,6 +16,7 @@ class Client:
     DECOUVERT_PERSONNEL = -10.00   # le solde du personnel peut aller jusqu'à -10 €
     SEUIL_FIDELITE = 40.00         # cumul d'achats à partir duquel on a la remise B3
     TAUX_FIDELITE = 0.05           # remise B3 : -5 %
+    TAUX_BOURSIER = 0.10
  
     def __init__(self, nom, profil, solde):
         # Attributs d'INSTANCE : propres à chaque client
@@ -23,6 +24,7 @@ class Client:
         self.profil = profil
         self.solde = solde         # solde du badge en €
         self.cumul_achats = 0.0    # total payé jusqu'ici (sert à la fidélité B3)
+        self.fidelite_active = False
  
     def recharger(self, montant):
         """Recharge le badge. Renvoie un couple (ok, motif), comme Produit.disponible."""
@@ -75,12 +77,14 @@ class Client:
         if self.profil == "visiteur":
             return
         self.cumul_achats = round(self.cumul_achats + montant, 2)
+        if self.cumul_achats >= self.SEUIL_FIDELITE:
+            self.fidelite_active = True
  
     def avantage_fidelite(self):
-        """Renvoie la remise B3 du client : 0.05 (5 %) s'il a cumulé 40 € ou plus, sinon 0.0."""
+        """Renvoie la remise B3 : 0.05 (5 %) si l'avantage est acquis, sinon 0.0."""
         if self.profil == "visiteur":
             return 0.0
-        if self.cumul_achats >= self.SEUIL_FIDELITE:
+        if self.fidelite_active:
             return self.TAUX_FIDELITE
         return 0.0
  

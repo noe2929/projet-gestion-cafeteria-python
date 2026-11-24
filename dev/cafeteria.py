@@ -24,7 +24,11 @@ class Cafeteria:
     TAUX_GROS_PANIER_AUTRES = 0.05   # A3 : -5 % pour personnel et visiteurs
     SEUIL_SOLDE_FAIBLE = 3.00        # rapport : badges sous ce solde
     NB_PRODUITS_TOP = 3              # rapport : nombre de produits les plus vendus
-    MOTIFS_REFUS = ("produit inconnu", "quantité invalide", "rupture de stock", "hors créneau", "solde insuffisant")
+    TAUX_BOURSIER = 0.10
+    MOTIFS_REFUS = (
+        "produit inconnu", "quantité invalide", "rupture de stock",
+        "hors créneau", "solde insuffisant", "produit rappelé", "déjà rappelé"
+    )
 
     def __init__(self, produits, clients):
         """produits : list de Produit ; clients : list de Client."""
@@ -38,6 +42,7 @@ class Cafeteria:
             self.clients[client.nom] = client
 
         self.journal = []
+        self.rappels = {}
         self.refus = {}                  # tous les motifs commencent à 0
         for motif in self.MOTIFS_REFUS:
             self.refus[motif] = 0
@@ -99,7 +104,10 @@ class Cafeteria:
         for code, quantite in demandes:               # contrôle 1 : les codes existent
             if code not in self.carte:
                 return (False, "produit inconnu")
-        for code, quantite in demandes:               # contrôle 2 : les quantités sont > 0
+        for code, quantite in demandes:               # contrôle 2 : les produits rappelés sont refusés
+            if self.carte[code].rappele:
+                return (False, "produit rappelé")
+        for code, quantite in demandes:               # contrôle 3 : les quantités sont > 0
             if quantite <= 0:
                 return (False, "quantité invalide")
         totaux = self.regrouper_quantites(demandes)
@@ -123,6 +131,8 @@ class Cafeteria:
             return 0.0
         if client.profil == "etudiant" or client.profil == "alternant":
             return self.TAUX_GROS_PANIER_BADGE
+        if client.profil == "boursier":
+            return self.TAUX_BOURSIER
         return self.TAUX_GROS_PANIER_AUTRES
 
     def calculer_montant(self, client, commande):
@@ -134,12 +144,55 @@ class Cafeteria:
 
     def enregistrer_commande(self, client, commande, montant):
         """ÉTAPE 4 : tout est bon, on modifie enfin le solde, la fidélité, le stock et le journal."""
+        avantage_avant = client.avantage_fidelite()
         client.debiter(montant)           # un visiteur paie comptant : son solde ne change pas
         client.ajouter_achat(montant)     # cumul pour la fidélité B3
         for produit, quantite in commande:            # utilise Commande.__iter__
             produit.vendre(quantite)
+        total_initial = commande.calculer_total()
         commande.montant_paye = montant
+        commande.remise = round(total_initial - montant, 2)
+        commande.avantage_fidelite = avantage_avant
+        commande.statut = "acceptee"
         self.journal.append(commande)
+
+    def annuler_commande(self, numero):
+        """Annule une commande acceptée et rembourse son montant réellement payé."""
+        commande = None
+        for commande_du_journal in self.journal:
+            if commande_du_journal.numero == numero:
+                commande = commande_du_journal
+
+        if commande is None:
+            return (False, "commande inconnue", 0.0)
+
+        if commande.statut == "annulee":
+            return (False, "commande déjà annulée", 0.0)
+
+        client = commande.client
+
+        for produit, quantite in commande:
+            produit.stock += quantite
+
+        if client.profil != "visiteur":
+            client.solde = round(client.solde + commande.montant_paye, 2)
+
+        commande.statut = "annulee"
+        self.recalculer_fidelite(client)
+
+        return (True, "", round(commande.montant_paye, 2))
+
+    def recalculer_fidelite(self, client):
+        """Rejoue les commandes actives du client dans l'ordre du journal."""
+        if client.profil == "visiteur":
+            return
+
+        client.cumul_achats = 0.0
+        client.fidelite_active = False
+
+        for commande in self.journal:
+            if commande.client == client and commande.statut == "acceptee":
+                client.ajouter_achat(commande.montant_paye)
 
     # RECHARGE ET RÉAPPROVISIONNEMENT
 
@@ -153,7 +206,76 @@ class Cafeteria:
         """code : str ; quantite : int. Renvoie True si le stock a augmenté, sinon False."""
         if code not in self.carte:
             return False
+        if self.carte[code].rappele:
+            self.refus["produit rappelé"] += 1
+            return False
         return self.carte[code].reapprovisionner(quantite)
+
+    def rappeler_produit(self, code):
+        """Rappelle un produit et annule toutes les commandes actives qui le contiennent."""
+        if code not in self.carte:
+            self.refus["produit inconnu"] += 1
+            return {
+                "produit": None,
+                "commandes_annulees": [],
+                "clients_rembourses": {},
+                "montant_total": 0.0,
+                "motif": "produit inconnu"
+            }
+
+        produit = self.carte[code]
+
+        if produit.rappele:
+            self.refus["déjà rappelé"] += 1
+            return {
+                "produit": produit,
+                "commandes_annulees": [],
+                "clients_rembourses": {},
+                "montant_total": 0.0,
+                "motif": "déjà rappelé"
+            }
+
+        produit.rappeler()
+
+        commandes_a_annuler = []
+        for commande in self.journal:
+            if commande.statut == "acceptee":
+                contient_produit = False
+                for produit_commande, quantite in commande:
+                    if produit_commande.code == code:
+                        contient_produit = True
+                if contient_produit:
+                    commandes_a_annuler.append(commande)
+
+        commandes_a_annuler.sort(key=lambda commande: commande.numero)
+
+        commandes_annulees = []
+        clients_rembourses = {}
+        montant_total = 0.0
+
+        for commande in commandes_a_annuler:
+            annulee, motif, montant = self.annuler_commande(commande.numero)
+            if annulee:
+                commandes_annulees.append(commande.numero)
+                nom_client = commande.client.nom
+                if nom_client not in clients_rembourses:
+                    clients_rembourses[nom_client] = 0.0
+                clients_rembourses[nom_client] = round(
+                    clients_rembourses[nom_client] + montant, 2
+                )
+                montant_total = round(montant_total + montant, 2)
+
+        produit.stock = 0
+
+        resume = {
+            "produit": produit,
+            "commandes_annulees": commandes_annulees,
+            "clients_rembourses": clients_rembourses,
+            "montant_total": montant_total,
+            "motif": ""
+        }
+        self.rappels[code] = resume
+        return resume
 
     # RAPPORT DE CLÔTURE : 
 
@@ -169,12 +291,19 @@ class Cafeteria:
         "soldes_faibles"   : list    de Client dont le solde est sous SEUIL_SOLDE_FAIBLE
         """
         rapport = {}
-        # Le rapport utilise uniquement les commandes acceptées.
-        rapport["nb_acceptees"] = len(self.journal)
+        rapport["nb_acceptees"] = len([
+            commande for commande in self.journal
+            if commande.statut == "acceptee"
+        ])
         rapport["refus"] = self.refus
         rapport["chiffre_affaires"] = self.calculer_chiffre_affaires()
+        rapport["montant_rembourse"] = self.calculer_montant_rembourse()
+        rapport["nb_annulees"] = len([
+            commande for commande in self.journal
+            if commande.statut == "annulee"
+        ])
         rapport["total_remises"] = self.calculer_total_remises()
-        # Les résultats sont calculés avant leur affichage.
+        rapport["rappels"] = self.rappels
         rapport["top_ventes"] = self.calculer_top_ventes()
         rapport["carte_triee"] = sorted(self.carte.values())    # sorted utilise Produit.__lt__
         rapport["soldes_faibles"] = self.trouver_soldes_faibles()
@@ -183,17 +312,26 @@ class Cafeteria:
     def calculer_chiffre_affaires(self):
         """Renvoie la somme des montants payés par toutes les commandes acceptées."""
         chiffre = 0.0
-        # Ajoute le montant payé de chaque commande acceptée.
+        # Ajoute le montant payé de chaque commande acceptée et non annulée.
         for commande in self.journal:
-            chiffre += commande.montant_paye
+            if commande.statut == "acceptee":
+                chiffre += commande.montant_paye
         return round(chiffre, 2)
+
+    def calculer_montant_rembourse(self):
+        """Renvoie la somme réellement remboursée pour les commandes annulées."""
+        montant = 0.0
+        for commande in self.journal:
+            if commande.statut == "annulee":
+                montant += commande.montant_paye
+        return round(montant, 2)
 
     def calculer_total_remises(self):
         """Renvoie la somme des remises et avantages : (total avant remises - montant payé)."""
         remises = 0.0
         for commande in self.journal:
-            # La remise est l'écart entre le total initial et le montant payé.
-            remises += commande.calculer_total() - commande.montant_paye
+            if commande.statut == "acceptee":
+                remises += commande.remise
         return round(remises, 2)
 
     def compter_ventes(self):
@@ -202,10 +340,11 @@ class Cafeteria:
         # Initialise tous les produits, même ceux qui n'ont jamais été vendus.
         for code in self.carte:
             ventes[code] = 0
-        # Additionne les quantités présentes dans les commandes acceptées.
+        # Additionne les quantités présentes dans les commandes acceptées et non annulées.
         for commande in self.journal:
-            for produit, quantite in commande:
-                ventes[produit.code] += quantite
+            if commande.statut == "acceptee":
+                for produit, quantite in commande:
+                    ventes[produit.code] += quantite
         return ventes
 
     def trouver_meilleur_code(self, ventes):
@@ -253,7 +392,10 @@ class Cafeteria:
         print(f"Commandes acceptées : {rapport['nb_acceptees']}")
         self.afficher_refus(rapport["refus"])
         print(f"Chiffre d'affaires : {rapport['chiffre_affaires']:.2f} €")
+        print(f"Commandes annulées : {rapport['nb_annulees']}")
+        print(f"Montant remboursé : {rapport['montant_rembourse']:.2f} €")
         print(f"Total des remises et avantages : {rapport['total_remises']:.2f} €")
+        self.afficher_rappels(rapport["rappels"])
         self.afficher_top_ventes(rapport["top_ventes"])
         self.afficher_carte(rapport["carte_triee"])
         self.afficher_soldes_faibles(rapport["soldes_faibles"])
@@ -264,6 +406,27 @@ class Cafeteria:
         # Afficher aussi les motifs à zéro rend le bilan complet.
         for motif in refus:
             print(f"  {motif} : {refus[motif]}")
+
+    def afficher_rappels(self, rappels):
+        """Affiche chaque rappel avec les clients triés par montant décroissant."""
+        print("Rappels de produits :")
+        if len(rappels) == 0:
+            print("  Aucun rappel")
+            return
+
+        for code in rappels:
+            rappel = rappels[code]
+            produit = rappel["produit"]
+            print(f"  {produit.nom} ({code}) : {rappel['montant_total']:.2f} € remboursés")
+
+            clients = []
+            for nom_client in rappel["clients_rembourses"]:
+                montant = rappel["clients_rembourses"][nom_client]
+                clients.append((nom_client, montant))
+
+            clients.sort(key=lambda element: (-element[1], element[0]))
+            for nom_client, montant in clients:
+                print(f"    {nom_client} : {montant:.2f} €")
 
     def afficher_top_ventes(self, top):
         """top : list de couples (Produit, quantité)."""
@@ -277,7 +440,9 @@ class Cafeteria:
         print("Carte triée par prix croissant :")
         # Le stock restant est affiché avec chaque produit.
         for produit in carte_triee:
-            if produit.stock == 0:
+            if produit.rappele:
+                print(f"  {produit} - RAPPELÉ")
+            elif produit.stock == 0:
                 print(f"  {produit} - ÉPUISÉ")
             else:
                 print(f"  {produit}")

@@ -54,7 +54,22 @@ python dev/scenario.py > sortie_scenario.txt
 - En cas d'égalité pour le top 3 des ventes, le premier produit dans l'ordre de la carte est retenu.
 - Un client inconnu entraîne un refus avec le motif `client inconnu`, sans modification de la caisse.
 
-## 5. Structure du projet
+## 5. Évolution v2.0
+
+- Une commande possède un statut `acceptee` ou `annulee`.
+- Une commande annulée reste dans le journal. Elle conserve son montant payé, sa remise et son avantage de fidélité.
+- `Cafeteria.annuler_commande(numero)` rembourse le montant réellement payé, restitue toutes les lignes au stock et rejoue la fidélité du client avec ses commandes encore actives.
+- `Cafeteria.rappeler_produit(code)` marque le produit rappelé, remet son stock à 0 et annule chronologiquement toutes les commandes actives qui le contiennent.
+- Le choix du rejeu est placé dans `Cafeteria.recalculer_fidelite(client)`, car la caisse possède le journal complet nécessaire pour rejouer les commandes. `Client` conserve le cumul et le taux B3 actifs.
+- Le rapport distingue les commandes actives des commandes annulées, affiche les montants remboursés et classe les clients touchés par chaque rappel du montant remboursé décroissant.
+- Le scénario officiel v2 est lancé avec :
+
+```bash
+python dev/scenario_v2.py
+python dev/scenario_v2.py > sortie_scenario_v2.txt
+```
+
+## 6. Structure du projet
 
 ```text
 .

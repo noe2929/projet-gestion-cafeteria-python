@@ -24,6 +24,9 @@ class Commande:
         self.heure = heure                # ex. "07:45"
         self.lignes = []                  # une NOUVELLE liste vide pour chaque commande
         self.montant_paye = 0.0           # rempli par la Cafeteria une fois la commande payée
+        self.statut = "acceptee"
+        self.remise = 0.0                 # remise totale en euros
+        self.avantage_fidelite = 0.0      # taux B3 accordé lors du paiement
 
     def ajouter_ligne(self, produit, quantite):
         """Ajoute la ligne (produit, quantite). Renvoie True si la ligne a été ajoutée."""
@@ -62,9 +65,15 @@ class Commande:
     def __str__(self):
         """Affichage pour l'utilisateur : la commande sous forme de ticket."""
         ticket = f"--- Commande n°{self.numero} ({self.heure}) - {self.client.nom} ---\n"
+        if self.statut == "annulee":
+            ticket += "Statut : ANNULÉE\n"
+        else:
+            ticket += "Statut : ACCEPTÉE\n"
         for produit, quantite in self.lignes:
             ticket += f"{quantite} x {produit.nom} : {produit.prix * quantite:.2f} €\n"
         ticket += f"Total : {self.calculer_total():.2f} €\n"
+        ticket += f"Remise : {self.remise:.2f} €\n"
+        ticket += f"Avantage fidélité : {self.avantage_fidelite * 100:.0f} %\n"
         ticket += f"Montant payé : {self.montant_paye:.2f} €"
         return ticket
 
